@@ -16,11 +16,12 @@ class AttendanceSystem(QWidget):
         self.setLayout(mainLayout)
 
         self.attendanceTable = QTableWidget()
-        self.attendanceTable.setColumnCount(3)
-        self.attendanceTable.setHorizontalHeaderLabels(['Roll Number', 'Name', 'Absent/Present'])
+        self.attendanceTable.setColumnCount(4)
+        self.attendanceTable.setHorizontalHeaderLabels(['Roll Number', 'Name', 'Absent/Present', 'Time of Arrival'])
         self.attendanceTable.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.attendanceTable.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.attendanceTable.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.attendanceTable.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
 
         self.attendanceTable.setStyleSheet(
             """
@@ -46,6 +47,7 @@ class AttendanceSystem(QWidget):
         self.rollNumberInput.setPlaceholderText("Enter Roll Number")
         self.saveAttendanceButton = QPushButton("Save Attendance")
         self.clearAttendanceButton = QPushButton("Clear Attendance")
+        self.refreshButton = QPushButton("Refresh Table")
 
         buttonStyle = """
             QPushButton {
@@ -65,6 +67,7 @@ class AttendanceSystem(QWidget):
         self.removeStudentButton.setStyleSheet(buttonStyle)
         self.saveAttendanceButton.setStyleSheet(buttonStyle)
         self.clearAttendanceButton.setStyleSheet(buttonStyle)
+        self.refreshButton.setStyleSheet(buttonStyle)
         
         inputStyle = """
             QLineEdit {
@@ -87,6 +90,7 @@ class AttendanceSystem(QWidget):
         buttonLayout.addWidget(self.removeStudentButton)
         buttonLayout.addWidget(self.saveAttendanceButton)
         buttonLayout.addWidget(self.clearAttendanceButton)
+        buttonLayout.addWidget(self.refreshButton)
         buttonContainer = QWidget()
         buttonContainer.setLayout(buttonLayout)
         mainLayout.addWidget(buttonContainer, 1, 1, 1, 1)

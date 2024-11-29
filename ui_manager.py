@@ -1,6 +1,7 @@
 from datetime import datetime
 from PySide6.QtWidgets import QTableWidgetItem, QFileDialog
 from PySide6.QtGui import QColor
+from PySide6.QtCore import Qt
 import csv
 
 class UIManager:
@@ -22,16 +23,67 @@ class UIManager:
         )
 
     def populate_table(self):
-        self.attendance_system.attendanceTable.setRowCount(0)  
-        for roll_number, details in self.data_manager.get_students().items():
+        student_data = self.data_manager.get_students()
+        self.attendance_system.attendanceTable.setRowCount(0)  # Clear the table
+        for roll_number, details in student_data.items():
             row_position = self.attendance_system.attendanceTable.rowCount()
             self.attendance_system.attendanceTable.insertRow(row_position)
             self.attendance_system.attendanceTable.setItem(row_position, 0, QTableWidgetItem(roll_number))
             self.attendance_system.attendanceTable.setItem(row_position, 1, QTableWidgetItem(details['name']))
-            absent_item = QTableWidgetItem("Absent")
-            absent_item.setForeground(QColor(255, 0, 0)) 
-            self.attendance_system.attendanceTable.setItem(row_position, 2, absent_item)
+            status = "Present" if details['arrival_time'] else "Absent"
+            status_item = QTableWidgetItem(status)
+            status_item.setForeground(QColor(0, 128, 0) if status == "Present" else QColor(255, 0, 0))
+            self.attendance_system.attendanceTable.setItem(row_position, 2, status_item)
+            time_item = QTableWidgetItem(details['arrival_time'] if details['arrival_time'] else "")
+            self.attendance_system.attendanceTable.setItem(row_position, 3, time_item)
+        self.sort_table_by_roll_number()
         self.update_summary()
+
+
+    def update_attendance_table(self):
+        student_data = self.data_manager.get_students()
+        for roll_number, details in student_data.items():
+            row_position = self.find_row_by_roll_number(roll_number)
+            if row_position == -1:
+                continue  
+
+            current_status_item = self.attendance_system.attendanceTable.item(row_position, 2)
+            current_status = current_status_item.text() if current_status_item else "Absent"
+
+            new_status = "Absent"
+            if roll_number in self.data_manager.known_face_names:
+                new_status = "Present"
+
+            if current_status != "Present" and new_status == "Present":
+                item = QTableWidgetItem(new_status)
+                item.setForeground(QColor(0, 128, 0))  
+                self.attendance_system.attendanceTable.setItem(row_position, 2, item)
+                arrival_time_item = QTableWidgetItem(details['arrival_time'] if details['arrival_time'] else "")
+                self.attendance_system.attendanceTable.setItem(row_position, 3, arrival_time_item)
+        
+        self.attendance_system.attendanceTable.viewport().update()
+        self.sort_table_by_roll_number()
+
+    def update_specific_row(self, roll_number):
+        row_position = self.find_row_by_roll_number(roll_number)
+        if row_position != -1:
+            details = self.data_manager.get_students()[roll_number]
+            status_item = QTableWidgetItem("Present")
+            status_item.setForeground(QColor(0, 128, 0))
+            self.attendance_system.attendanceTable.setItem(row_position, 2, status_item)
+            arrival_time_item = QTableWidgetItem(details['arrival_time'] if details['arrival_time'] else "")
+            self.attendance_system.attendanceTable.setItem(row_position, 3, arrival_time_item)
+            self.attendance_system.attendanceTable.viewport().update()
+        self.sort_table_by_roll_number()
+
+    def find_row_by_roll_number(self, roll_number):
+        for row in range(self.attendance_system.attendanceTable.rowCount()):
+            if self.attendance_system.attendanceTable.item(row, 0).text() == roll_number:
+                return row
+        return -1
+
+    def sort_table_by_roll_number(self):
+        self.attendance_system.attendanceTable.sortItems(0, Qt.SortOrder.AscendingOrder)
 
     def remove_student(self):
         current_row = self.attendance_system.attendanceTable.currentRow()
@@ -59,24 +111,14 @@ class UIManager:
                 roll_number = self.attendance_system.attendanceTable.item(row, 0).text()
                 name = self.attendance_system.attendanceTable.item(row, 1).text()
                 status = self.attendance_system.attendanceTable.item(row, 2).text()
-                attendance_data.append([roll_number, name, status])
+                time_of_arrival = self.attendance_system.attendanceTable.item(row, 3).text()
+                attendance_data.append([roll_number, name, status, time_of_arrival])
 
             with open(path, 'w', newline='') as file:
                 writer = csv.writer(file)
-                writer.writerow(["Roll Number", "Name", "Status"])
+                writer.writerow(["Roll Number", "Name", "Status", "Time of Arrival"])
                 writer.writerows(attendance_data)
             self.append_status(f"Attendance saved to {path}")
-
-    def update_attendance_table(self):
-        for roll_number, details in self.data_manager.get_students().items():
-            for i in range(self.attendance_system.attendanceTable.rowCount()):
-                if self.attendance_system.attendanceTable.item(i, 0).text() == roll_number:
-                    status = "Present" if roll_number in self.data_manager.known_face_names else "Absent"
-                    item = QTableWidgetItem(status)
-                    item.setForeground(QColor(0, 128, 0) if status == "Present" else QColor(255, 0, 0))  # Set text color based on status
-                    self.attendance_system.attendanceTable.setItem(i, 2, item)
-        self.attendance_system.attendanceTable.viewport().update() 
-        self.update_summary()
 
     def update_summary(self):
         total_present = 0

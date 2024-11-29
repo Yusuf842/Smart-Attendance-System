@@ -14,7 +14,12 @@ class DataManager:
     def load_data(self):
         if os.path.exists(self.data_file):
             with open(self.data_file, 'r') as f:
-                return json.load(f)
+                data = json.load(f)
+                # Initialize missing fields
+                for roll_number, details in data.items():
+                    if 'arrival_time' not in details:
+                        data[roll_number]['arrival_time'] = None
+                return data
         return {}
 
     def save_data(self):
@@ -37,11 +42,20 @@ class DataManager:
         
         self.data[roll_number] = {
             'name': name,
-            'image_path': img_filename
+            'image_path': img_filename,
+            'arrival_time': None  # Initialize arrival time as None
         }
         self.save_data()
-        self.load_known_faces()  
+        self.load_known_faces()
         return True
+
+    def update_arrival_time(self, roll_number, time):
+        if roll_number in self.data:
+            if 'arrival_time' not in self.data[roll_number]:
+                self.data[roll_number]['arrival_time'] = None  # Initialize if missing
+            if self.data[roll_number]['arrival_time'] is None:
+                self.data[roll_number]['arrival_time'] = time
+                self.save_data()
 
     def remove_student(self, roll_number):
         if roll_number in self.data:
@@ -50,7 +64,7 @@ class DataManager:
                 os.remove(image_path)
             del self.data[roll_number]
             self.save_data()
-            self.load_known_faces()  
+            self.load_known_faces()
             return True
         return False
 

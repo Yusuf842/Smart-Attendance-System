@@ -34,6 +34,13 @@ class MainApp:
         self.attendance_system.addStudentButton.clicked.connect(self.add_new_student)
         self.attendance_system.removeStudentButton.clicked.connect(self.remove_student)
         self.attendance_system.clearAttendanceButton.clicked.connect(self.clear_attendance)
+        self.attendance_system.refreshButton.clicked.connect(self.refresh_data)
+
+    def refresh_data(self):
+        for roll_number, details in self.data_manager.get_students().items():
+            details['arrival_time'] = None  
+        self.data_manager.save_data() 
+        self.ui_manager.populate_table()  
 
     def setup_check_data_timer(self):
         self.check_data_timer.timeout.connect(self.check_data_file)
@@ -72,18 +79,19 @@ class MainApp:
                 if ret:
                     print("Captured image for new student")
                     if self.data_manager.add_student(roll_number, name, frame):
-                        self.ui_manager.populate_table()
+                        self.ui_manager.populate_table()  
                         self.ui_manager.append_status(f"Student added and image saved as {roll_number}_{name}.png")
                         self.face_recognition_handler.known_face_encodings = self.data_manager.known_face_encodings
                         self.face_recognition_handler.known_face_names = self.data_manager.known_face_names
                         print("Updated face recognition handler with new encodings")
-                        self.check_data_file() 
-                else:
-                    self.ui_manager.append_status("Failed to capture image from camera.")
+                        self.check_data_file()
+                    else:
+                        self.ui_manager.append_status("Failed to capture image from camera.")
             else:
                 self.ui_manager.append_status("Camera is not connected.")
         else:
             self.ui_manager.append_status("Please enter both name and roll number.")
+
 
     def remove_student(self):
         print("Removing student")
